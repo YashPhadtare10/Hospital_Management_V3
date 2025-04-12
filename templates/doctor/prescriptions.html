@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Prescription{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Prescription</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color:rgb(235, 220, 200); padding: 15px 15px">
+            <h5 class="mb-0">Appointment Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Patient:</strong> {{ appointment.patient_name }}</p>
+                    <p><strong>Age/Gender:</strong> {{ appointment.age }} / {{ appointment.gender }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Date:</strong> {{ appointment.date }}</p>
+                    <p><strong>Time:</strong> {{ appointment.time_slot }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <form method="POST" action="{{ url_for('prescriptions', appointment_id=appointment.id) }}">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Diagnosis</h5>
+            </div>
+            <div class="card-body">
+                <textarea name="diagnosis" class="form-control" rows="3" 
+                    placeholder="Enter diagnosis..." required>{% if prescription %}{{ prescription.diagnosis }}{% endif %}</textarea>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Medicines</h5>
+                <button type="button" class="btn btn-sm btn-primary" id="addMedicine">
+                    <i class="fas fa-plus"></i> Add Medicine
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="medicinesContainer">
+                    {% if prescription and prescription.medicines_parsed %}
+                        {% for medicine in prescription.medicines_parsed %}
+                        <div class="medicine-row mb-3 border-bottom pb-3">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <input type="text" name="medicine_name_{{ loop.index }}" class="form-control mb-2" 
+                                        placeholder="Medicine name" value="{{ medicine.name }}" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" name="medicine_dosage_{{ loop.index }}" class="form-control mb-2" 
+                                        placeholder="Dosage" value="{{ medicine.dosage }}" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" name="medicine_frequency_{{ loop.index }}" class="form-control mb-2" 
+                                        placeholder="Frequency" value="{{ medicine.frequency }}" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" 
+                                            name="medicine_morning_{{ loop.index }}" value="1" {% if medicine.morning == '1' %}checked{% endif %}>
+                                        <label class="form-check-label">Morning</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" 
+                                            name="medicine_afternoon_{{ loop.index }}" value="1" {% if medicine.afternoon == '1' %}checked{% endif %}>
+                                        <label class="form-check-label">Afternoon</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" 
+                                            name="medicine_evening_{{ loop.index }}" value="1" {% if medicine.evening == '1' %}checked{% endif %}>
+                                        <label class="form-check-label">Evening</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <select name="medicine_meal_{{ loop.index }}" class="form-select">
+                                        <option value="before" {% if medicine.meal == 'before' %}selected{% endif %}>Before meal</option>
+                                        <option value="after" {% if medicine.meal == 'after' %}selected{% endif %}>After meal</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-danger removeMedicine mt-2">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="medicine-row mb-3 border-bottom pb-3">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <input type="text" name="medicine_name_1" class="form-control mb-2" 
+                                        placeholder="Medicine name" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" name="medicine_dosage_1" class="form-control mb-2" 
+                                        placeholder="Dosage" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" name="medicine_frequency_1" class="form-control mb-2" 
+                                        placeholder="Frequency" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="medicine_morning_1" value="1">
+                                        <label class="form-check-label">Morning</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="medicine_afternoon_1" value="1">
+                                        <label class="form-check-label">Afternoon</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="medicine_evening_1" value="1">
+                                        <label class="form-check-label">Evening</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <select name="medicine_meal_1" class="form-select">
+                                        <option value="before">Before meal</option>
+                                        <option value="after" selected>After meal</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-danger removeMedicine mt-2">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Additional Instructions</h5>
+            </div>
+            <div class="card-body">
+                <textarea name="instructions" class="form-control" rows="3" 
+                    placeholder="Enter any additional instructions...">{% if prescription %}{{ prescription.instructions }}{% endif %}</textarea>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('doctor_appointments') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Appointments
+            </a>
+            <div>
+                <button type="submit" name="action" value="save" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Prescription
+                </button>
+                <button type="submit" name="action" value="print" class="btn btn-success ms-2">
+                    <i class="fas fa-print"></i> Save & Print
+                </button>
+            </div>
+        </div>
+        
+        <input type="hidden" id="medicine_count" name="medicine_count" 
+               value="{{ prescription.medicines_parsed|length if prescription and prescription.medicines_parsed else 1 }}">
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add medicine row
+    document.getElementById('addMedicine').addEventListener('click', function() {
+        const container = document.getElementById('medicinesContainer');
+        const count = document.querySelectorAll('.medicine-row').length + 1;
+        document.getElementById('medicine_count').value = count;
+        
+        const newRow = document.createElement('div');
+        newRow.className = 'medicine-row mb-3 border-bottom pb-3';
+        newRow.innerHTML = `
+            <div class="row">
+                <div class="col-md-3">
+                    <input type="text" name="medicine_name_${count}" class="form-control mb-2" 
+                        placeholder="Medicine name" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="medicine_dosage_${count}" class="form-control mb-2" 
+                        placeholder="Dosage" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="medicine_frequency_${count}" class="form-control mb-2" 
+                        placeholder="Frequency" required>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="medicine_morning_${count}" value="1">
+                        <label class="form-check-label">Morning</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="medicine_afternoon_${count}" value="1">
+                        <label class="form-check-label">Afternoon</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="medicine_evening_${count}" value="1">
+                        <label class="form-check-label">Evening</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select name="medicine_meal_${count}" class="form-select">
+                        <option value="before">Before meal</option>
+                        <option value="after" selected>After meal</option>
+                    </select>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger removeMedicine mt-2">
+                <i class="fas fa-trash"></i> Remove
+            </button>
+        `;
+        
+        container.appendChild(newRow);
+    });
+    
+    // Remove medicine row
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('removeMedicine')) {
+            const row = e.target.closest('.medicine-row');
+            row.remove();
+            
+            // Update medicine count
+            const count = document.querySelectorAll('.medicine-row').length;
+            document.getElementById('medicine_count').value = count;
+            
+            // Rename all inputs to maintain sequence
+            const rows = document.querySelectorAll('.medicine-row');
+            rows.forEach((row, index) => {
+                const num = index + 1;
+                row.querySelectorAll('input, select').forEach(input => {
+                    const name = input.name.replace(/_\d+$/, '') + '_' + num;
+                    input.name = name;
+                });
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

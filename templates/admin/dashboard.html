@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    /* Smooth page transitions */
+    body {
+        opacity: 1;
+        transition: opacity 0.2s ease;
+    }
+    
+    body.fade-out {
+        opacity: 0;
+    }
+
+    /* Card styling with proper hover effects */
+    .dashboard-card {
+        position: relative;
+        padding: 20px;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+        height: 100%;
+        overflow: hidden;
+        cursor: pointer;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    }
+    
+    .card-icon {
+        font-size: 2rem;
+        color: #323131;
+        margin-bottom: 10px;
+        transition: transform 0.2s ease;
+    }
+    
+    .dashboard-card:hover .card-icon {
+        transform: scale(1.05);
+    }
+    
+    .card-title {
+        font-size: 1rem;
+        color: #6c757d;
+        margin-bottom: 5px;
+        transition: color 0.2s ease;
+    }
+    
+    .dashboard-card:hover .card-title {
+        color: #323131;
+    }
+    
+    .card-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #212529;
+        transition: transform 0.2s ease;
+    }
+    
+    .dashboard-card:hover .card-value {
+        transform: scale(1.02);
+    }
+
+    /* Button styling with proper hover effects */
+    .btn {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        z-index: 1;
+    }
+    
+    .btn-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+    }
+    
+    .btn-outline-primary {
+        color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+    }
+
+    /* Table row styling with hover */
+    .table-hover tbody tr {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(235, 220, 200, 0.1);
+        transform: translateX(3px);
+    }
+
+    /* Action buttons container */
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .action-btn i {
+        margin-right: 0.5rem;
+        transition: transform 0.2s ease;
+    }
+
+    .action-btn:hover i {
+        transform: scale(1.1);
+    }
+</style>
+
+<div class="mb-4">
+    <h3 class="text-dark mb-0">Dashboard Overview</h3>
+    <p class="text-muted">Quick statistics and recent activities</p>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Doctors Card -->
+    <div class="col-md-4">
+        <a href="{{ url_for('view_doctors') }}" class="text-decoration-none">
+            <div class="dashboard-card">
+                <div class="card-icon">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div class="card-title">Total Doctors</div>
+                <div class="card-value">{{ doctors_count }}</div>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Patients Card -->
+    <div class="col-md-4">
+        <a href="{{ url_for('view_patients') }}" class="text-decoration-none">
+            <div class="dashboard-card">
+                <div class="card-icon">
+                    <i class="fas fa-procedures"></i>
+                </div>
+                <div class="card-title">Total Patients</div>
+                <div class="card-value">{{ patients_count }}</div>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Appointments Card -->
+    <div class="col-md-4">
+        <a href="{{ url_for('view_appointments') }}" class="text-decoration-none">
+            <div class="dashboard-card">
+                <div class="card-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="card-title">Total Appointments</div>
+                <div class="card-value">{{ appointments_count }}</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Appointments Table -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color:rgb(235, 220, 200); padding: 15px 15px">
+                <h4 class="mb-0"><i class="fas fa-calendar-day me-2"></i>Recent Appointments</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Doctor</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in recent_appointments %}
+                            <tr onclick="window.location.href='{{ url_for('view_appointments') }}'" style="cursor: pointer;">
+                                <td>{{ app.patient_name }}</td>
+                                <td>{{ app.doctor_name }}</td>
+                                <td>{{ app.date }}</td>
+                                <td>{{ app.time_slot }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if app.status == 'Completed' %}bg-success
+                                        {% elif app.status == 'Cancelled' %}bg-danger
+                                        {% else %}bg-primary{% endif %}">
+                                        {{ app.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">No recent appointments</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color:rgb(235, 220, 200); padding: 15px 15px">
+                <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Quick Actions</h4>
+            </div>
+            <div class="card-body">
+                <div class="action-buttons">
+                    <a href="{{ url_for('add_patient') }}" class="btn btn-primary action-btn">
+                        <i class="fas fa-user-plus"></i>Add New Patient
+                    </a>
+                    <a href="{{ url_for('add_doctor') }}" class="btn btn-outline-primary action-btn">
+                        <i class="fas fa-user-md"></i>Add New Doctor
+                    </a>
+                    <a href="{{ url_for('schedule_appointment') }}" class="btn btn-outline-primary action-btn">
+                        <i class="fas fa-calendar-plus"></i>Schedule Appointment
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Remove the navigateTo function and let the default link behavior work
+    document.addEventListener('DOMContentLoaded', function() {
+        // For table rows
+        const tableRows = document.querySelectorAll('.table-hover tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('click', function() {
+                window.location.href = this.getAttribute('onclick').match(/'([^']+)'/)[1];
+            });
+        });
+    });
+</script>
+{% endblock %}

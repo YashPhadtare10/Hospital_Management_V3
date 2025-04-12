@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Doctor Dashboard</h3>
+            <a href="{{ url_for('all_patients_history') }}" class="btn btn-primary">
+                <i class="fas fa-users me-1"></i> View All Patients History
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color:rgb(235, 220, 200); padding: 15px 15px">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-day me-2"></i>Today's Appointments
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if appointments_today %}
+                    <div class="list-group">
+                        {% for app in appointments_today %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ app.patient_name }}</h6>
+                                <span class="badge 
+                                    {% if app.status == 'Completed' %}bg-success
+                                    {% elif app.status == 'Cancelled' %}bg-danger
+                                    {% else %}bg-primary{% endif %}">
+                                    {{ app.status }}
+                                </span>
+                            </div>
+                            <p class="mb-1">Time: {{ app.time_slot }}</p>
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ url_for('prescriptions', appointment_id=app.id) }}" 
+                                   class="btn btn-sm btn-success">
+                                    <i class="fas fa-prescription me-1"></i>Prescribe
+                                </a>
+                                <a href="{{ url_for('patient_history', patient_id=app.patient_id) }}"
+                                   class="btn btn-sm btn-info">
+                                    <i class="fas fa-history me-1"></i>History
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">No appointments scheduled for today.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color:rgb(235, 220, 200); padding: 15px 15px">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-week me-2"></i>Upcoming Appointments
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if upcoming_appointments %}
+                    <div class="list-group">
+                        {% for app in upcoming_appointments %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ app.patient_name }}</h6>
+                                <span class="badge 
+                                    {% if app.status == 'Completed' %}bg-success
+                                    {% elif app.status == 'Cancelled' %}bg-danger
+                                    {% else %}bg-primary{% endif %}">
+                                    {{ app.status }}
+                                </span>
+                            </div>
+                            <p class="mb-1">
+                                {{ app.date }} at {{ app.time_slot }}
+                            </p>
+                            <div class="d-flex justify-content-end gap-2">
+                                <form method="POST" action="{{ url_for('update_appointment_status', appointment_id=app.id) }}" 
+                                      class="d-inline">
+                                    <input type="hidden" name="status" value="Completed">
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="fas fa-check me-1"></i>Complete
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('update_appointment_status', appointment_id=app.id) }}" 
+                                      class="d-inline">
+                                    <input type="hidden" name="status" value="Cancelled">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-times me-1"></i>Cancel
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">No upcoming appointments.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color:rgb(235, 220, 200); padding: 15px 15px">
+        <h5 class="mb-0">
+            <i class="fas fa-chart-line me-2"></i>Statistics
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 text-center">
+                <div class="display-4 text-primary">{{ appointments_today|length }}</div>
+                <p class="text-muted">Today's Appointments</p>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="display-4 text-success">{{ upcoming_appointments|length }}</div>
+                <p class="text-muted">Upcoming Appointments</p>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="display-4 text-info">
+                    {% set completed = namespace(count=0) %}
+                    {% for app in upcoming_appointments %}
+                        {% if app.status == 'Completed' %}
+                            {% set completed.count = completed.count + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ completed.count }}
+                </div>
+                <p class="text-muted">Completed This Week</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

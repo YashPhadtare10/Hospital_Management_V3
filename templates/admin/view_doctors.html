@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}View Doctors{% endblock %}
+
+{% block content %}
+<style>
+    .profile-img {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 50%;
+        margin: 0 auto;
+        display: block;
+    }
+    .profile-img-placeholder {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+    .doctor-card {
+        transition: transform 0.2s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .doctor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .card-body {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: auto;
+        padding-top: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .doctor-info {
+        margin-bottom: 1rem;
+    }
+    .doctor-info p {
+        margin-bottom: 0.5rem;
+    }
+    .doctor-image-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+    .doctor-details {
+        padding: 1rem;
+    }
+    .btn-action {
+        width: auto;
+        height: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 20px;
+        transition: all 0.2s;
+        padding: 8px 16px;
+        margin: 4px;
+        min-width: 120px;
+    }
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .btn-action i {
+        margin-right: 8px;
+    }
+</style>
+
+<div class="card">
+    <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color:rgb(235, 220, 200); padding: 15px 15px">
+        <h4 class="mb-0">
+            <i class="fas fa-user-md me-2"></i>Doctors List
+        </h4>
+        <a href="{{ url_for('add_doctor') }}" class="btn btn-light">
+            <i class="fas fa-user-plus me-1"></i>Add Doctor
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <form class="search-form" method="GET" action="{{ url_for('view_doctors') }}">
+                    <input class="form-control" type="search" name="search" placeholder="Search doctors..." 
+                           value="{{ search_query }}" aria-label="Search">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search me-1"></i>Search
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            {% for doctor in doctors %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card doctor-card">
+                    <div class="doctor-image-container">
+                        {% if doctor.image_path %}
+                            <img src="{{ url_for('static', filename=doctor.image_path) }}" 
+                                 class="profile-img" alt="{{ doctor.name }}">
+                        {% else %}
+                            <div class="profile-img-placeholder">
+                                <i class="fas fa-user-md fa-3x text-secondary"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="doctor-details">
+                        <h5 class="card-title text-center">{{ doctor.name }}</h5>
+                        <p class="card-text text-primary text-center mb-2">
+                            <strong>{{ doctor.specialization }}</strong>
+                        </p>
+                        <div class="doctor-info">
+                            <p class="card-text mb-1">
+                                <small class="text-muted">
+                                    <i class="fas fa-briefcase me-1"></i>
+                                    {{ doctor.experience }} years experience
+                                </small>
+                            </p>
+                            <p class="card-text mb-1">
+                                <small class="text-muted">
+                                    <i class="fas fa-rupee-sign me-1"></i>
+                                    Consultation Fee: ₹{{ "%.2f"|format(doctor.consultation_fee) }}
+                                </small>
+                            </p>
+                            <p class="card-text mb-1">
+                                <small class="text-muted">
+                                    <i class="fas fa-phone me-1"></i>
+                                    {{ doctor.contact }}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="action-buttons justify-content-center">
+                            <button type="button" class="btn-action btn-primary" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#setLoginModal{{ doctor.id }}"
+                                    title="Set login credentials">
+                                <i class="fas fa-key"></i>Set Login
+                            </button>
+                            <button type="button" class="btn-action btn-info" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#setSlotsModal{{ doctor.id }}"
+                                    title="Set availability slots">
+                                <i class="fas fa-clock"></i>Set Slots
+                            </button>
+                            <button type="button" class="btn-action btn-success" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#bookAppointmentModal{{ doctor.id }}"
+                                    title="Book appointment">
+                                <i class="fas fa-calendar-plus"></i>Book
+                            </button>
+                            <button type="button" class="btn-action btn-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteDoctorModal{{ doctor.id }}"
+                                    title="Delete doctor">
+                                <i class="fas fa-trash"></i>Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Set Login Modal -->
+            <div class="modal fade" id="setLoginModal{{ doctor.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Set Login Credentials</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Set login credentials for Dr. {{ doctor.name }}?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <a href="{{ url_for('set_doctor_credentials', doctor_id=doctor.id) }}" class="btn btn-primary">Set Login</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Set Slots Modal -->
+            <div class="modal fade" id="setSlotsModal{{ doctor.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Set Availability Slots</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Set availability slots for Dr. {{ doctor.name }}?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <a href="{{ url_for('set_doctor_slots', doctor_id=doctor.id) }}" class="btn btn-info">Set Slots</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Book Appointment Modal -->
+            <div class="modal fade" id="bookAppointmentModal{{ doctor.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Book Appointment</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Book an appointment with Dr. {{ doctor.name }}?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <a href="{{ url_for('schedule_appointment') }}?doctor_id={{ doctor.id }}" class="btn btn-success">Book Appointment</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Doctor Modal -->
+            <div class="modal fade" id="deleteDoctorModal{{ doctor.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Delete Doctor</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to delete Dr. {{ doctor.name }}? This action cannot be undone.</p>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Warning: This will also delete all associated appointments and records.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <form action="{{ url_for('delete_doctor', doctor_id=doctor.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash me-1"></i>Delete Doctor
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">No doctors found. Please add doctors to get started.</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

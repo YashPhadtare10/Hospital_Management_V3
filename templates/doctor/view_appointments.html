@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}My Appointments{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color:rgb(235, 220, 200); padding: 15px 15px">
+        <h4 class="mb-0">
+            <i class="fas fa-calendar-alt me-2"></i>My Appointments
+        </h4>
+        <div>
+            <a href="{{ url_for('doctor_dashboard') }}" class="btn btn-light">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <form class="row g-2" method="GET" action="{{ url_for('doctor_appointments') }}">
+                    <div class="col-md-5">
+                        <input type="search" class="form-control" name="search" placeholder="Search appointments..." 
+                               value="{{ search_query }}" aria-label="Search">
+                    </div>
+                    <div class="col-md-5">
+                        <select class="form-select" name="status">
+                            <option value="">All Statuses</option>
+                            <option value="Scheduled" {% if status_filter == 'Scheduled' %}selected{% endif %}>Scheduled</option>
+                            <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+                            <option value="Cancelled" {% if status_filter == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100" type="submit">
+                            <i class="fas fa-filter me-1"></i>Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in appointments %}
+                    <tr>
+                        <td>{{ app.patient_name }}</td>
+                        <td>{{ app.age }}</td>
+                        <td>{{ app.gender }}</td>
+                        <td>{{ app.date }}</td>
+                        <td>{{ app.time_slot }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if app.status == 'Completed' %}bg-success
+                                {% elif app.status == 'Cancelled' %}bg-danger
+                                {% else %}bg-primary{% endif %}">
+                                {{ app.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('prescriptions', appointment_id=app.id) }}" 
+                                   class="btn btn-sm btn-success" data-bs-toggle="tooltip" title="Add Prescription">
+                                    <i class="fas fa-prescription"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('update_appointment_status', appointment_id=app.id) }}">
+                                    <input type="hidden" name="status" value="Completed">
+                                    <button type="submit" class="btn btn-sm btn-outline-success" data-bs-toggle="tooltip" title="Mark Completed">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('update_appointment_status', appointment_id=app.id) }}">
+                                    <input type="hidden" name="status" value="Cancelled">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Cancel Appointment">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center">No appointments found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

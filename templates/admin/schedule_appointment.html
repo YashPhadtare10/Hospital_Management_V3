@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule Appointment{% endblock %}
+
+{% block extra_css %}
+<style>
+    .slot-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 10px;
+    }
+    .slot {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+    }
+    .slot:hover:not(.booked) {
+        border-color: #0d6efd;
+        box-shadow: 0 2px 4px rgba(13, 110, 253, 0.1);
+    }
+    .slot.selected {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    .slot.selected small {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+    .slot.booked {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+    .slot-time {
+        font-weight: 600;
+        font-size: 1.1em;
+    }
+    .loading-spinner {
+        width: 3rem;
+        height: 3rem;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #0d6efd;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .slot-status {
+        margin-top: 5px;
+        font-size: 0.8em;
+    }
+    #time_slots {
+        min-height: 200px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color:rgb(235, 220, 200); padding: 15px 15px"">
+        <h4 class="mb-0">
+            <i class="fas fa-calendar-plus me-2"></i>Schedule Appointment
+        </h4>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('schedule_appointment') }}" id="appointmentForm">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="patient_id" class="form-label">Patient <span class="text-danger">*</span></label>
+                    <select class="form-select" id="patient_id" name="patient_id" required>
+                        <option value="">Select Patient</option>
+                        {% for patient in patients %}
+                            <option value="{{ patient.id }}" 
+                                {% if request.args.get('patient_id') == patient.id|string %}selected{% endif %}>
+                                {{ patient.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="doctor_id" class="form-label">Doctor <span class="text-danger">*</span></label>
+                    <select class="form-select" id="doctor_id" name="doctor_id" required>
+                        <option value="">Select Doctor</option>
+                        {% for doctor in doctors %}
+                            <option value="{{ doctor.id }}" 
+                                {% if request.args.get('doctor_id') == doctor.id|string %}selected{% endif %}>
+                                Dr. {{ doctor.name }} ({{ doctor.specialization }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="date" name="date" required 
+                           min="{{ min_date }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="time_slot" class="form-label">Time Slot <span class="text-danger">*</span></label>
+                    <input type="hidden" id="time_slot" name="time_slot" required>
+                    <div id="time_slots" class="border rounded">
+                        <div class="text-center text-muted p-4">
+                            <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                            <p class="mb-0">Please select a doctor and date to view available slots</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12">
+                    <label for="notes" class="form-label">Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="2" 
+                              placeholder="Add any additional notes or instructions"></textarea>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{{ url_for('view_appointments') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back
+                </a>
+                <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                    <i class="fas fa-calendar-check me-1"></i> Schedule Appointment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function formatTime(time24) {
+    const [hours, minutes] = time24.split(':');
+    const period = +hours >= 12 ? 'PM' : 'AM';
+    const hours12 = +hours % 12 || 12;
+    return `${hours12}:${minutes} ${period}`.toLowerCase();
+}
+
+function validateForm() {
+    const patient = $('#patient_id').val();
+    const doctor = $('#doctor_id').val();
+    const date = $('#date').val();
+    const timeSlot = $('#time_slot').val();
+    
+    if (patient && doctor && date && timeSlot) {
+        $('#submitBtn').prop('disabled', false);
+    } else {
+        $('#submitBtn').prop('disabled', true);
+    }
+}
+
+function selectSlot(element) {
+    $('.slot').removeClass('selected');
+    $(element).addClass('selected');
+    $('#time_slot').val($(element).data('start'));
+    validateForm();
+}
+
+$(document).ready(function() {
+    // Initial form validation
+    validateForm();
+    
+    // Form input change handlers
+    $('#patient_id, #doctor_id, #date').on('change', function() {
+        validateForm();
+    });
+    
+    // Doctor Time Slot Management
+    $('#doctor_id, #date').on('change', function() {
+        const doctorId = $('#doctor_id').val();
+        const date = $('#date').val();
+        $('#time_slot').val(''); // Clear selected time slot
+        validateForm();
+        
+        if (doctorId && date) {
+            $('#time_slots').html(`
+                <div class="text-center py-4">
+                    <div class="loading-spinner mb-3"></div>
+                    <p class="mb-0">Loading available time slots...</p>
+                </div>
+            `);
+            
+            $.getJSON(`/admin/get_doctor_slots/${doctorId}/${date}`)
+                .done(function(data) {
+                    if (data.error) {
+                        $('#time_slots').html(`
+                            <div class="alert alert-warning m-3">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                ${data.error}
+                            </div>
+                        `);
+                        return;
+                    }
+                    
+                    if (data.slots.length === 0) {
+                        $('#time_slots').html(`
+                            <div class="alert alert-info m-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                No time slots available for this date
+                            </div>
+                        `);
+                        return;
+                    }
+                    
+                    let html = '<div class="slot-container">';
+                    data.slots.forEach(slot => {
+                        const isBooked = data.booked_slots.includes(slot.start);
+                        const startTime = formatTime(slot.start);
+                        const endTime = formatTime(slot.end);
+                        
+                        html += `
+                            <div class="slot ${isBooked ? 'booked' : 'available'}" 
+                                 data-start="${slot.start}" ${isBooked ? 'disabled' : 'onclick="selectSlot(this)"'}>
+                                <div class="slot-time">${startTime}</div>
+                                <small class="text-muted">${endTime}</small>
+                                ${isBooked ? '<div class="slot-status"><i class="fas fa-lock"></i> Booked</div>' : ''}
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    $('#time_slots').html(html);
+                })
+                .fail(function() {
+                    $('#time_slots').html(`
+                        <div class="alert alert-danger m-3">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Error loading time slots. Please try again.
+                        </div>
+                    `);
+                });
+        } else {
+            $('#time_slots').html(`
+                <div class="text-center text-muted p-4">
+                    <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                    <p class="mb-0">Please select a doctor and date to view available slots</p>
+                </div>
+            `);
+        }
+    });
+    
+    // Form submission validation
+    $('#appointmentForm').on('submit', function(e) {
+        if (!$('#time_slot').val()) {
+            e.preventDefault();
+            alert('Please select a time slot');
+        }
+    });
+});
+</script>
+{% endblock %}
